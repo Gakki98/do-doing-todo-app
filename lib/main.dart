@@ -14,6 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'DoDoing',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.pink),
       home: HomePage(),
     );
   }
@@ -27,7 +28,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _box = Hive.box('tasksBox');
   final _input = TextEditingController();
-  final Map<int, GlobalKey> _taskKeys = {}; // keys for positioning emojis
 
   final List<String> bloomEmojis = [
     '🌸', '🌺', '🌷', '🌹', '🪻', '✨', '💫', '🌈',
@@ -64,19 +64,13 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void _toggleDone(int id, BuildContext context) {
-    final key = _taskKeys[id];
-    if (key == null) return;
-
-    RenderBox box = key.currentContext!.findRenderObject() as RenderBox;
-    Offset pos = box.localToGlobal(Offset(box.size.width / 2, box.size.height / 2));
-
+  void _toggleDone(int id, BuildContext context, Offset position) {
     final tasks = _getTasks();
     for (var t in tasks) {
       if (t['id'] == id) {
         t['isDone'] = !(t['isDone'] as bool);
         if (t['isDone'] == true) {
-          _showEmojiBloom(context, pos);
+          _showEmojiBloom(context, position);
         }
       }
     }
@@ -116,13 +110,13 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('DoDoing', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.pinkAccent,
-        elevation: 2,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.pink[50]!, Colors.pink[100]!],
+            colors: [Colors.yellow[100]!, Colors.pink[50]!],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -165,7 +159,6 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: ListView(
                 children: [
-                  // To Do Section
                   if (todo.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,12 +171,16 @@ class _HomePageState extends State<HomePage> {
                             elevation: 2,
                             margin: EdgeInsets.symmetric(vertical: 6),
                             child: ListTile(
-                              key: _taskKeys[t['id']] ??= GlobalKey(),
                               title: Text(t['title'], style: TextStyle(fontSize: 16)),
-                              leading: Checkbox(
-                                value: t['isDone'],
-                                onChanged: (_) => _toggleDone(t['id'], context),
-                                activeColor: Colors.pinkAccent,
+                              leading: Listener(
+                                onPointerDown: (details) {
+                                  _toggleDone(t['id'], context, details.position);
+                                },
+                                child: Checkbox(
+                                  value: t['isDone'],
+                                  onChanged: (_) {},
+                                  activeColor: Colors.pinkAccent,
+                                ),
                               ),
                               trailing: IconButton(
                                 icon: Icon(Icons.delete, color: Colors.grey[700]),
@@ -194,7 +191,6 @@ class _HomePageState extends State<HomePage> {
                         }).toList(),
                       ],
                     ),
-                  // Done Section
                   if (done.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +204,6 @@ class _HomePageState extends State<HomePage> {
                             elevation: 1,
                             margin: EdgeInsets.symmetric(vertical: 6),
                             child: ListTile(
-                              key: _taskKeys[t['id']] ??= GlobalKey(),
                               title: Text(
                                 t['title'],
                                 style: TextStyle(
@@ -232,10 +227,12 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   if (tasks.isEmpty)
-                    Center(child: Padding(
-                      padding: EdgeInsets.only(top: 50),
-                      child: Text('No tasks yet!', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                    )),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 50),
+                        child: Text('No tasks yet!', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -246,7 +243,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ================= _EmojiBloom Widget =================
+// Emoji bloom widget
 class _EmojiBloom extends StatefulWidget {
   final String emoji;
   final VoidCallback onComplete;
@@ -254,24 +251,28 @@ class _EmojiBloom extends StatefulWidget {
   const _EmojiBloom({required this.emoji, required this.onComplete});
 
   @override
-  State<_EmojiBloom> createState() => _EmojiBloomState();
+  __EmojiBloomState createState() => __EmojiBloomState();
 }
 
-class _EmojiBloomState extends State<_EmojiBloom> with SingleTickerProviderStateMixin {
+class __EmojiBloomState extends State<_EmojiBloom> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: Duration(milliseconds: 800));
-    _animation = Tween<double>(begin: 0, end: -80).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut))
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          widget.onComplete();
-        }
-      });
-    _controller.forward();
+    _controller = AnimationController(duration: Duration(milliseconds: 800), vsync: this);
+    _animation = Tween<double>(begin: 0, end: 1.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+
+    _controller.forward().whenComplete(() => widget.onComplete());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -279,20 +280,9 @@ class _EmojiBloomState extends State<_EmojiBloom> with SingleTickerProviderState
     return AnimatedBuilder(
       animation: _animation,
       builder: (_, child) {
-        return Transform.translate(
-          offset: Offset(0, _animation.value),
-          child: Opacity(
-            opacity: 1 - _controller.value,
-            child: Text(widget.emoji, style: TextStyle(fontSize: 30)),
-          ),
-        );
+        return Transform.scale(scale: _animation.value, child: child);
       },
+      child: Text(widget.emoji, style: TextStyle(fontSize: 28)),
     );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 }
