@@ -22,6 +22,12 @@ Mark a task as done and watch random emojis like 🌸, 🌺, 🌷, 💫 pop up, 
 |------------|-------------|
 | ![Screenshot1](screenshots/todo_list.png) | ![Screenshot2](screenshots/emoji_bloom.png) |
 <img width="100" height="100" alt="image" src="https://github.com/user-attachments/assets/b326d6f6-0f13-4d8b-aadd-154be2370dff" />
+<img width="200" height="400" alt="Screenshot from 2025-08-22 15-12-42" src="https://github.com/user-attachments/assets/9df43d79-381a-4d22-8357-17adde99c009" />
+<img width="200" height="400" alt="Screenshot from 2025-08-22 15-12-22" src="https://github.com/user-attachments/assets/36361023-8231-48d0-8a0f-1c319d710cfe" />
+
+
+https://github.com/user-attachments/assets/e8b8099a-7b75-4190-b8be-df5435a0c415
+
 
 ---
 
